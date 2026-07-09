@@ -107,11 +107,11 @@ No secrets or additional configuration are required for these CI builds to pass.
 
 ### Version number
 
-Each CI build increments an integer version number stored in `version.json`. The same number is used as the Android `versionCode`, the iOS `buildNumber`, and the in-app version label shown in the header.
+Each CI build increments an integer version number stored in `version.json`. The same number is used as the Android `versionCode`, the iOS `buildNumber`, and the Android `versionName` (formatted as `1.0.x`).
 
 ### Dynamic URL whitelist
 
-The allowed URLs are defined in `url-whitelist.json` at the repository root. This file is copied into the app bundle at build time so the app works on first launch. At runtime, the app fetches the latest `url-whitelist.json` from the `main` branch every 15 minutes and applies it immediately, so path changes on X's side can be fixed without waiting for an app store update.
+The allowed URLs are defined in `url-whitelist.json` at the repository root. This file is copied into the app bundle at build time so the app works on first launch. At runtime, the app fetches the latest `url-whitelist.json` from the `main` branch every 15 minutes and applies it immediately, so path changes on X's side can be fixed without waiting for an app store update. Because the allowlist is fetched dynamically, edits to `url-whitelist.json` alone do not trigger new CI builds.
 
 ### With EAS Build (optional, for signed store binaries)
 

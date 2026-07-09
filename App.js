@@ -17,7 +17,6 @@ import {
   shouldAllowRequest,
   startWhitelistRefreshLoop,
 } from './src/urlPolicy';
-import { BUILD_NUMBER } from './src/build-info';
 
 // Keep the user inside the composer: hide the X back arrow and block
 // navigation to the timeline when the user is on /compose/post.
@@ -118,7 +117,6 @@ export default function App() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Only Post on X</Text>
-          <Text style={styles.buildNumber}>build {BUILD_NUMBER}</Text>
         </View>
         <TouchableOpacity onPress={redirectToCompose}>
           <Text style={styles.headerButton}>Compose</Text>
@@ -183,11 +181,6 @@ const styles = StyleSheet.create({
     color: '#e7e9ea',
     fontSize: 18,
     fontWeight: '700',
-  },
-  buildNumber: {
-    color: '#71767b',
-    fontSize: 11,
-    marginTop: 2,
   },
   headerButton: {
     color: '#1d9bf0',

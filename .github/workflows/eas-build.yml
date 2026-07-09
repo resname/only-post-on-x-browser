@@ -17,19 +17,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine if repo changed in the last 24 hours
+      - name: Determine if repo source changed in the last 24 hours
         id: check
         run: |
-          LAST_COMMIT=$(git log -1 --format=%ct)
-          NOW=$(date +%s)
-          AGE=$((NOW - LAST_COMMIT))
-          SECONDS_IN_DAY=86400
-          if [ "$AGE" -le "$SECONDS_IN_DAY" ]; then
+          # Ignore automated version/metadata files and the remote allowlist. The
+          # allowlist is fetched dynamically, so allowlist-only edits must not rebuild.
+          RECENT_SOURCE_COMMITS=$(git log --since='24 hours ago' --format=%H -- . \
+            ':!version.json' \
+            ':!app.json' \
+            ':!package.json' \
+            ':!url-whitelist.json' \
+            ':!src/whitelist/whitelist.json' \
+            | wc -l)
+          if [ "$RECENT_SOURCE_COMMITS" -gt 0 ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Repository changed within the last 24 hours; will build."
+            echo "Repository source changed within the last 24 hours; will build."
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes in the last 24 hours; skipping build."
+            echo "No source changes in the last 24 hours; skipping build."
           fi
 
   eas:

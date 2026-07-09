@@ -26,11 +26,14 @@ jobs:
       - name: Determine if repo source changed in the last 24 hours
         id: check
         run: |
-          # Ignore automated version/metadata files when deciding whether a real source change happened.
+          # Ignore automated version/metadata files and the remote allowlist when deciding
+          # whether a real source change happened. The allowlist is fetched dynamically by
+          # the app, so editing url-whitelist.json must not trigger a rebuild.
           RECENT_SOURCE_COMMITS=$(git log --since='24 hours ago' --format=%H -- . \
             ':!version.json' \
             ':!app.json' \
-            ':!src/build-info/build-info.json' \
+            ':!package.json' \
+            ':!url-whitelist.json' \
             ':!src/whitelist/whitelist.json' \
             | wc -l)
           if [ "$RECENT_SOURCE_COMMITS" -gt 0 ]; then
@@ -54,7 +57,7 @@ jobs:
         id: bump
         if: steps.check.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
-          npm run build-info
+          npm run bump-version
           echo -n "version=" >> "$GITHUB_OUTPUT"
           node -p "require('./version.json').version" >> "$GITHUB_OUTPUT"
 
@@ -64,7 +67,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add version.json app.json src/build-info/build-info.json src/whitelist/whitelist.json
+          git add version.json app.json package.json src/whitelist/whitelist.json
           VERSION=$(node -p "require('./version.json').version")
           git diff --cached --quiet || git commit -m "Bump version to $VERSION [skip ci]"
           git push origin HEAD:main
