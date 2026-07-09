@@ -87,11 +87,19 @@ jobs:
             -workspace "$WORKSPACE" \
             -scheme "${{ steps.scheme.outputs.scheme }}" \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -arch arm64 x86_64 \
+            ONLY_ACTIVE_ARCH=NO \
             clean build
+
+      - name: Locate built simulator app
+        id: locate
+        run: |
+          APP=$(find ios/build -name '*.app' -type d | head -1)
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "Built app: $APP"
 
       - name: Upload iOS simulator app
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-app
-          path: ios/build/Build/Products/Debug-iphonesimulator/*.app
+          path: ${{ steps.locate.outputs.app }}
