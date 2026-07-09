@@ -1,0 +1,49 @@
+name: Lint and test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Static checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Expo config
+        run: npx expo config --type public
+
+      - name: Parse JS files with Babel
+        run: |
+          node - <<'EOF'
+          const babel = require('@babel/core');
+          const fs = require('fs');
+          const files = ['App.js', 'src/urlPolicy.js', 'babel.config.js'];
+          for (const file of files) {
+            const code = fs.readFileSync(file, 'utf8');
+            babel.parseSync(code, {
+              filename: file,
+              presets: file.endsWith('.js') ? ['babel-preset-expo'] : undefined,
+              babelrc: false,
+              configFile: false,
+            });
+            console.log(`${file}: OK`);
+          }
+          EOF
