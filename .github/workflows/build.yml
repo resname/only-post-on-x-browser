@@ -1,4 +1,4 @@
-name: Build Android release APK
+name: Build iOS simulator and Android release APK
 
 on:
   push:
@@ -48,3 +48,59 @@ jobs:
         with:
           name: android-release-apk
           path: android/app/build/outputs/apk/release/*.apk
+
+  build-ios-simulator:
+    name: Build iOS simulator app
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Generate native iOS project
+        run: npx expo prebuild --platform ios
+
+      - name: Resolve iOS scheme name
+        id: scheme
+        run: |
+          SCHEME=$(find ios -name '*.xcscheme' -not -path '*/Pods/*' | head -1 | xargs -I {} basename {} .xcscheme)
+          echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
+          echo "Using scheme: $SCHEME"
+
+      - name: Build iOS simulator binary
+        run: |
+          cd ios
+          WORKSPACE=$(find . -maxdepth 1 -name '*.xcworkspace' | head -1)
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "${{ steps.scheme.outputs.scheme }}" \
+            -sdk iphonesimulator \
+            -derivedDataPath ../ios-derived-data \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build
+
+      - name: Locate built simulator app
+        id: locate
+        run: |
+          APP=$(find ios-derived-data -name '*.app' -type d | head -1)
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "Built app: $APP"
+
+      - name: Upload iOS simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: ${{ steps.locate.outputs.app }}
