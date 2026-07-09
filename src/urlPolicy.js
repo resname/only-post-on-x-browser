@@ -4,54 +4,55 @@
  * The app is intentionally minimal: it can only log in to X and open the
  * post composer. Everything else (timeline, profiles, explore, external
  * links, etc.) is blocked.
+ *
+ * The allowed paths are loaded from a bundled whitelist at startup and can be
+ * refreshed from a remote whitelist file in the repository.
  */
+
+import bundledWhitelist from './whitelist/whitelist.json';
 
 export const COMPOSE_URL = 'https://x.com/compose/post';
 
-// X/Twitter domains used for visible pages and API calls.
-const X_DOMAINS = new Set([
-  'x.com',
-  'twitter.com',
-  'api.x.com',
-  'api.twitter.com',
-  'abs.twimg.com',
-  'pbs.twimg.com',
-  'video.twimg.com',
-  'ton.twimg.com',
-  'cdn.syndication.twimg.com',
-]);
+// Raw GitHub URL for the latest whitelist in the main branch.
+const REMOTE_WHITELIST_URL =
+  'https://raw.githubusercontent.com/resname/only-post-on-x-browser/main/url-whitelist.json';
 
-// Third-party login providers X uses for SSO.
-const AUTH_DOMAINS = new Set([
-  'accounts.google.com',
-  'appleid.apple.com',
-  'idmsa.apple.com',
-  'login.live.com',
-  'www.facebook.com',
-]);
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
-// Allowed visible page paths on x.com / twitter.com.
-const ALLOWED_X_PATHS = [
-  '/compose/post',
-  '/login',
-  '/logout',
-  '/i/flow/login',
-  '/i/flow/signup',
-  '/i/flow/password_reset',
-  '/i/flow/add_username',
-  '/i/flow/confirm_email',
-  '/i/flow/account',
-  '/i/flow/sso',
-  '/i/flow/single_sign_on',
-  '/i/flow/2fa',
-  '/i/flow/verify',
-  '/i/flow/enter_password',
-  '/i/oauth2/',
-  '/auth/',
-  '/oauth/',
-  '/account/begin_password_reset',
-  '/account/access',
-];
+let currentWhitelist = normalizeWhitelist(bundledWhitelist);
+
+function normalizeWhitelist(raw) {
+  return {
+    xDomains: new Set(raw.xDomains || []),
+    authDomains: new Set(raw.authDomains || []),
+    allowedPaths: raw.allowedPaths || [],
+    blockedPaths: new Set(raw.blockedPaths || []),
+  };
+}
+
+export async function refreshWhitelist() {
+  try {
+    const response = await fetch(REMOTE_WHITELIST_URL, {
+      method: 'GET',
+      cache: 'no-cache',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const json = await response.json();
+    currentWhitelist = normalizeWhitelist(json);
+    return currentWhitelist;
+  } catch (error) {
+    // Keep using the bundled whitelist if the remote fetch fails.
+    console.warn('Failed to refresh whitelist:', error.message);
+    return currentWhitelist;
+  }
+}
+
+export function startWhitelistRefreshLoop() {
+  refreshWhitelist();
+  setInterval(refreshWhitelist, REFRESH_INTERVAL_MS);
+}
 
 function hostnameMatches(hostname, domain) {
   return hostname === domain || hostname.endsWith('.' + domain);
@@ -75,19 +76,29 @@ export function getPathname(url) {
 
 export function isXDomain(url) {
   const host = getHostname(url);
-  return Array.from(X_DOMAINS).some((domain) => hostnameMatches(host, domain));
+  return Array.from(currentWhitelist.xDomains).some((domain) =>
+    hostnameMatches(host, domain)
+  );
 }
 
 export function isAuthProvider(url) {
   const host = getHostname(url);
-  return Array.from(AUTH_DOMAINS).some((domain) => hostnameMatches(host, domain));
+  return Array.from(currentWhitelist.authDomains).some((domain) =>
+    hostnameMatches(host, domain)
+  );
+}
+
+export function isBlockedPath(url) {
+  const path = getPathname(url);
+  return currentWhitelist.blockedPaths.has(path);
 }
 
 export function isAllowedXPage(url) {
   if (!isXDomain(url)) return false;
   const path = getPathname(url);
-  return ALLOWED_X_PATHS.some((allowed) =>
-    path === allowed || path.startsWith(allowed)
+  if (isBlockedPath(url)) return false;
+  return currentWhitelist.allowedPaths.some(
+    (allowed) => path === allowed || path.startsWith(allowed)
   );
 }
 

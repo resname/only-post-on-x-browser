@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.check.outputs.changed }}
+      version: ${{ steps.bump.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,8 +33,31 @@ jobs:
             echo "No changes in the last 24 hours; skipping build."
           fi
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version and bundle whitelist
+        id: bump
+        run: |
+          npm run build-info
+          echo "version=$(node -p \"require('./version.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json app.json src/build-info/build-info.json src/whitelist/whitelist.json
+          git diff --cached --quiet || git commit -m "Bump version to $(node -p "require('./version.json').version") [skip ci]"
+          git push origin HEAD:main || true
+
   build-android:
-    name: Build Android release APK
+    name: Build Android release APK (version ${{ needs.check-for-changes.outputs.version }})
     needs: check-for-changes
     if: needs.check-for-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -49,9 +73,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Generate build number
-        run: npm run build-info
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -77,7 +98,7 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
 
   build-ios-simulator:
-    name: Build iOS simulator app
+    name: Build iOS simulator app (version ${{ needs.check-for-changes.outputs.version }})
     needs: check-for-changes
     if: needs.check-for-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
@@ -94,9 +115,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Generate build number
-        run: npm run build-info
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
@@ -118,6 +136,7 @@ jobs:
           xcodebuild \
             -workspace "$WORKSPACE" \
             -scheme "${{ steps.scheme.outputs.scheme }}" \
+            \
             -sdk iphonesimulator \
             -derivedDataPath ../ios-derived-data \
             ARCHS="arm64 x86_64" \

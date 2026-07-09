@@ -105,6 +105,14 @@ The built artifacts are uploaded to the workflow summary and can be downloaded f
 
 No secrets or additional configuration are required for these CI builds to pass.
 
+### Version number
+
+Each CI build increments an integer version number stored in `version.json`. The same number is used as the Android `versionCode`, the iOS `buildNumber`, and the in-app version label shown in the header.
+
+### Dynamic URL whitelist
+
+The allowed URLs are defined in `url-whitelist.json` at the repository root. This file is copied into the app bundle at build time so the app works on first launch. At runtime, the app fetches the latest `url-whitelist.json` from the `main` branch every 15 minutes and applies it immediately, so path changes on X's side can be fixed without waiting for an app store update.
+
 ### With EAS Build (optional, for signed store binaries)
 
 If you want signed `.ipa`/`.aab` files distributed through Expo's cloud build service, use the optional `.github/workflows/eas-build.yml` workflow.

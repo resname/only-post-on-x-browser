@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "xDomains": [
+    "x.com",
+    "twitter.com",
+    "api.x.com",
+    "api.twitter.com",
+    "abs.twimg.com",
+    "pbs.twimg.com",
+    "video.twimg.com",
+    "ton.twimg.com",
+    "cdn.syndication.twimg.com"
+  ],
+  "authDomains": [
+    "accounts.google.com",
+    "appleid.apple.com",
+    "idmsa.apple.com",
+    "login.live.com",
+    "www.facebook.com"
+  ],
+  "allowedPaths": [
+    "/compose/post",
+    "/login",
+    "/logout",
+    "/i/flow/login",
+    "/i/flow/signup",
+    "/i/flow/password_reset",
+    "/i/flow/add_username",
+    "/i/flow/confirm_email",
+    "/i/flow/account",
+    "/i/flow/sso",
+    "/i/flow/single_sign_on",
+    "/i/flow/2fa",
+    "/i/flow/verify",
+    "/i/flow/enter_password",
+    "/i/oauth2/",
+    "/auth/",
+    "/oauth/",
+    "/account/begin_password_reset",
+    "/account/access"
+  ],
+  "blockedPaths": [
+    "/home"
+  ]
+}

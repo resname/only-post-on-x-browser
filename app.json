@@ -16,14 +16,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.onlypostonx.app"
+      "bundleIdentifier": "com.onlypostonx.app",
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.onlypostonx.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
-      }
+      },
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"

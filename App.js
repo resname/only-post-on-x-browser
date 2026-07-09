@@ -15,14 +15,17 @@ import {
   isAllowedTopLevelUrl,
   isXDomain,
   shouldAllowRequest,
+  startWhitelistRefreshLoop,
 } from './src/urlPolicy';
 import { BUILD_NUMBER } from './src/build-info';
 
 // Keep the user inside the composer: hide the X back arrow and block
 // navigation to the timeline when the user is on /compose/post.
+// We deliberately do NOT override history.back, because X uses it to close
+// modals such as the GIF picker.
 const COMPOSE_LOCK_SCRIPT = `
 (function() {
-  function hideBackButton() {
+  function hideTimelineBackButton() {
     const selectors = [
       '[data-testid="app-bar-back"]',
       'a[href="/home"]',
@@ -31,13 +34,15 @@ const COMPOSE_LOCK_SCRIPT = `
     ];
     selectors.forEach(sel => {
       document.querySelectorAll(sel).forEach(el => {
-        el.style.display = 'none';
-        el.style.pointerEvents = 'none';
+        if ((el.getAttribute('href') || '').startsWith('/home') || el.getAttribute('href') === '/') {
+          el.style.display = 'none';
+          el.style.pointerEvents = 'none';
+        }
       });
     });
   }
 
-  function blockBackNavigation(e) {
+  function blockTimelineNavigation(e) {
     const a = e.target.closest('a');
     if (!a) return;
     const href = a.getAttribute('href') || '';
@@ -48,10 +53,9 @@ const COMPOSE_LOCK_SCRIPT = `
   }
 
   if (location.pathname === '/compose/post') {
-    hideBackButton();
-    document.addEventListener('click', blockBackNavigation, true);
-    history.back = function() {};
-    const observer = new MutationObserver(hideBackButton);
+    hideTimelineBackButton();
+    document.addEventListener('click', blockTimelineNavigation, true);
+    const observer = new MutationObserver(hideTimelineBackButton);
     observer.observe(document.body, { childList: true, subtree: true });
   }
 })();
@@ -65,6 +69,9 @@ const MOBILE_USER_AGENT = 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit
 export default function App() {
   const webviewRef = useRef(null);
   const [blockedUrl, setBlockedUrl] = useState(null);
+
+  // Start fetching the remote whitelist periodically.
+  startWhitelistRefreshLoop();
 
   const handleShouldStartLoadWithRequest = (request) => {
     const allowed = shouldAllowRequest(request);
