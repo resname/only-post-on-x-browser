@@ -16,6 +16,7 @@ jobs:
     outputs:
       changed: ${{ steps.check.outputs.changed }}
       version: ${{ steps.bump.outputs.version }}
+      commit: ${{ steps.commit.outputs.sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,6 +59,7 @@ jobs:
           node -p "require('./version.json').version" >> "$GITHUB_OUTPUT"
 
       - name: Commit version bump
+        id: commit
         if: steps.check.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
@@ -66,6 +68,7 @@ jobs:
           VERSION=$(node -p "require('./version.json').version")
           git diff --cached --quiet || git commit -m "Bump version to $VERSION [skip ci]"
           git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   build-android:
     name: Build Android release APK (version ${{ needs.check-for-changes.outputs.version }})
@@ -75,6 +78,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-for-changes.outputs.commit }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -117,6 +122,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-for-changes.outputs.commit }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
