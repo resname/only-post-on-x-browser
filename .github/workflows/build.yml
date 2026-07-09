@@ -1,4 +1,4 @@
-name: Build iOS and Android app with EAS
+name: Build iOS simulator and Android release APK
 
 on:
   push:
@@ -10,14 +10,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build (${{ matrix.platform }})
+  build-android:
+    name: Build Android release APK
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ios, android]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,14 +26,71 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          distribution: zulu
+          java-version: 17
 
-      - name: Validate Expo config
-        run: npx expo config --type public
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Build ${{ matrix.platform }} app with EAS
-        run: eas build --platform ${{ matrix.platform }} --non-interactive --no-wait
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android
+
+      - name: Build release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+  build-ios-simulator:
+    name: Build iOS simulator app
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Generate native iOS project
+        run: npx expo prebuild --platform ios
+
+      - name: Resolve iOS scheme name
+        id: scheme
+        run: |
+          SCHEME=$(find ios -maxdepth 1 -name '*.xcscheme' -not -path '*/Pods/*' | head -1 | xargs basename | sed 's/\.xcscheme$//')
+          echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
+          echo "Using scheme: $SCHEME"
+
+      - name: Build iOS simulator binary
+        run: |
+          cd ios
+          WORKSPACE=$(find . -maxdepth 1 -name '*.xcworkspace' | head -1)
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "${{ steps.scheme.outputs.scheme }}" \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            clean build
+
+      - name: Upload iOS simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: ios/build/Build/Products/Debug-iphonesimulator/*.app

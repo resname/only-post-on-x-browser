@@ -1,0 +1,42 @@
+name: Build production binaries with EAS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  eas:
+    name: EAS Build (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || vars.USE_EAS_BUILDS == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Validate Expo config
+        run: npx expo config --type public
+
+      - name: Build ${{ matrix.platform }} app with EAS
+        run: eas build --platform ${{ matrix.platform }} --non-interactive --no-wait
