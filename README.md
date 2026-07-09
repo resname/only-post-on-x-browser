@@ -30,7 +30,7 @@ If you want to post on X without the distraction of scrolling, this app removes 
 ├── app.json               # Expo app config
 ├── assets/                # App icons and splash screen
 ├── .github/workflows/     # GitHub Actions CI/CD
-│   ├── build.yml          # Default local CI builds (no Expo account needed)
+│   ├── build.yml          # Default Android CI build (no Expo account needed)
 │   └── eas-build.yml      # Optional signed EAS builds (requires EXPO_TOKEN)
 ├── package.json
 ├── babel.config.js
@@ -91,18 +91,15 @@ eas build --platform android
 
 ### With GitHub Actions (default)
 
-The repository includes a `.github/workflows/build.yml` workflow that builds the app on every push to `main` and on pull requests **without requiring an Expo account**:
+The repository includes a `.github/workflows/build.yml` workflow that builds an Android release APK on every push to `main` and on pull requests **without requiring an Expo account**.
 
-- **Android**: compiles an unsigned release APK on Ubuntu.
-- **iOS**: compiles a simulator `.app` on macOS.
+The built APK is uploaded to the workflow summary and can be downloaded from the GitHub Actions page.
 
-The built artifacts are uploaded to the workflow summary and can be downloaded from the GitHub Actions page.
-
-No secrets or additional configuration are required for these CI builds to pass.
+No secrets or additional configuration are required for this CI build to pass.
 
 ### With EAS Build (optional, for signed store binaries)
 
-If you want signed `.ipa`/`.aab` files distributed through Expo's cloud build service, use the optional `.github/workflows/eas-build.yml` workflow.
+If you want signed `.aab` files distributed through Expo's cloud build service, use the optional `.github/workflows/eas-build.yml` workflow.
 
 1. Create an Expo access token:
 
