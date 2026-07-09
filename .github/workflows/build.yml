@@ -1,17 +1,41 @@
 name: Build iOS simulator and Android release APK
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  schedule:
+    - cron: '17 6 * * *'
   workflow_dispatch:
 
 jobs:
+  check-for-changes:
+    name: Check for repository changes since last run
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine if repo changed in the last 24 hours
+        id: check
+        run: |
+          LAST_COMMIT=$(git log -1 --format=%ct)
+          NOW=$(date +%s)
+          AGE=$((NOW - LAST_COMMIT))
+          SECONDS_IN_DAY=86400
+          if [ "$AGE" -le "$SECONDS_IN_DAY" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Repository changed within the last 24 hours; will build."
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes in the last 24 hours; skipping build."
+          fi
+
   build-android:
     name: Build Android release APK
+    needs: check-for-changes
+    if: needs.check-for-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -51,6 +75,8 @@ jobs:
 
   build-ios-simulator:
     name: Build iOS simulator app
+    needs: check-for-changes
+    if: needs.check-for-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 45
     steps:

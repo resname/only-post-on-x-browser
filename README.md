@@ -91,10 +91,15 @@ eas build --platform android
 
 ### With GitHub Actions (default)
 
-The repository includes a `.github/workflows/build.yml` workflow that builds the app on every push to `main` and on pull requests **without requiring an Expo account**:
+The repository includes a `.github/workflows/build.yml` workflow that builds the app **without requiring an Expo account**:
 
 - **Android**: compiles an unsigned release APK on Ubuntu.
 - **iOS**: compiles a simulator `.app` on macOS.
+
+The workflow is triggered in two ways:
+
+1. **Daily scheduled run** at 06:17 UTC, but only if the repository has changed within the last 24 hours.
+2. **Manually**, from the GitHub Actions tab using **Run workflow**.
 
 The built artifacts are uploaded to the workflow summary and can be downloaded from the GitHub Actions page.
 
@@ -119,7 +124,7 @@ If you want signed `.ipa`/`.aab` files distributed through Expo's cloud build se
 
    Or set it via the GitHub web UI: **Settings > Secrets and variables > Actions > New repository secret**.
 
-3. Trigger the workflow manually from the GitHub Actions tab, or set the repository variable `USE_EAS_BUILDS` to `true` to run it on every push to `main`.
+3. Trigger the workflow manually from the GitHub Actions tab, or set the repository variable `USE_EAS_BUILDS` to `true` to include it in the daily scheduled runs.
 
 ### Locally
 
