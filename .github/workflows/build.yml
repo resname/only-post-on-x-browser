@@ -1,5 +1,9 @@
 name: Build iOS simulator and Android release APK
 
+permissions:
+  contents: write
+  actions: write
+
 on:
   schedule:
     - cron: '17 6 * * *'
@@ -61,7 +65,7 @@ jobs:
           git add version.json app.json src/build-info/build-info.json src/whitelist/whitelist.json
           VERSION=$(node -p "require('./version.json').version")
           git diff --cached --quiet || git commit -m "Bump version to $VERSION [skip ci]"
-          git push origin HEAD:main || true
+          git push origin HEAD:main
 
   build-android:
     name: Build Android release APK (version ${{ needs.check-for-changes.outputs.version }})
