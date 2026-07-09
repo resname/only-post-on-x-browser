@@ -87,7 +87,7 @@ jobs:
             -workspace "$WORKSPACE" \
             -scheme "${{ steps.scheme.outputs.scheme }}" \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,id=dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             clean build
 
       - name: Upload iOS simulator app
