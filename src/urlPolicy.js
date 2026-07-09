@@ -65,7 +65,7 @@ function getHostname(url) {
   }
 }
 
-function getPathname(url) {
+export function getPathname(url) {
   try {
     return new URL(url).pathname.toLowerCase();
   } catch {

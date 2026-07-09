@@ -11,11 +11,56 @@ import {
 import WebView from 'react-native-webview';
 import {
   COMPOSE_URL,
+  getPathname,
   isAllowedTopLevelUrl,
   isXDomain,
   shouldAllowRequest,
 } from './src/urlPolicy';
 import { BUILD_NUMBER } from './src/build-info';
+
+// Keep the user inside the composer: hide the X back arrow and block
+// navigation to the timeline when the user is on /compose/post.
+const COMPOSE_LOCK_SCRIPT = `
+(function() {
+  function hideBackButton() {
+    const selectors = [
+      '[data-testid="app-bar-back"]',
+      'a[href="/home"]',
+      'a[href="/"]',
+      'a[href^="/home?"]',
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.display = 'none';
+        el.style.pointerEvents = 'none';
+      });
+    });
+  }
+
+  function blockBackNavigation(e) {
+    const a = e.target.closest('a');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (href === '/home' || href === '/' || href.startsWith('/home?')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  if (location.pathname === '/compose/post') {
+    hideBackButton();
+    document.addEventListener('click', blockBackNavigation, true);
+    history.back = function() {};
+    const observer = new MutationObserver(hideBackButton);
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+})();
+true;
+`;
+
+// Use a current mobile Chrome user agent so X treats this as a real browser
+// and shows all login options (Google, phone/email, Apple).
+const MOBILE_USER_AGENT = 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
 
 export default function App() {
   const webviewRef = useRef(null);
@@ -39,10 +84,17 @@ export default function App() {
   const handleNavigationStateChange = (navState) => {
     if (!navState.url) return;
 
-    // Avoid auto-redirecting here: that causes a reload loop when X bounces
-    // between login and composer while the user is not yet authenticated.
-    if (!isAllowedTopLevelUrl(navState.url) && !isXDomain(navState.url)) {
-      setBlockedUrl(navState.url);
+    if (!isAllowedTopLevelUrl(navState.url)) {
+      if (isXDomain(navState.url)) {
+        // If the user clicks the X back arrow to leave the composer, send them
+        // back to the composer instead of letting them access the timeline.
+        const path = getPathname(navState.url);
+        if (path === '/' || path === '/home') {
+          redirectToCompose();
+        }
+      } else {
+        setBlockedUrl(navState.url);
+      }
     }
   };
 
@@ -70,6 +122,8 @@ export default function App() {
           ref={webviewRef}
           source={{ uri: COMPOSE_URL }}
           style={styles.webview}
+          userAgent={MOBILE_USER_AGENT}
+          injectedJavaScript={COMPOSE_LOCK_SCRIPT}
           startInLoadingState
           renderLoading={() => (
             <View style={styles.loader}>
