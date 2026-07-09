@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate build number
+        run: npm run build-info
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -91,6 +94,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate build number
+        run: npm run build-info
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer

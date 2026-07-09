@@ -15,6 +15,7 @@ import {
   isXDomain,
   shouldAllowRequest,
 } from './src/urlPolicy';
+import { BUILD_NUMBER } from './src/build-info';
 
 export default function App() {
   const webviewRef = useRef(null);
@@ -56,7 +57,10 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Only Post on X</Text>
+        <View>
+          <Text style={styles.headerTitle}>Only Post on X</Text>
+          <Text style={styles.buildNumber}>build {BUILD_NUMBER}</Text>
+        </View>
         <TouchableOpacity onPress={redirectToCompose}>
           <Text style={styles.headerButton}>Compose</Text>
         </TouchableOpacity>
@@ -118,6 +122,11 @@ const styles = StyleSheet.create({
     color: '#e7e9ea',
     fontSize: 18,
     fontWeight: '700',
+  },
+  buildNumber: {
+    color: '#71767b',
+    fontSize: 11,
+    marginTop: 2,
   },
   headerButton: {
     color: '#1d9bf0',
