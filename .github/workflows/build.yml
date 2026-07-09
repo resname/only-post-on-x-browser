@@ -87,6 +87,7 @@ jobs:
             -workspace "$WORKSPACE" \
             -scheme "${{ steps.scheme.outputs.scheme }}" \
             -sdk iphonesimulator \
+            -derivedDataPath ../ios-derived-data \
             ARCHS="arm64 x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             clean build
@@ -94,7 +95,7 @@ jobs:
       - name: Locate built simulator app
         id: locate
         run: |
-          APP=$(find ios/build -name '*.app' -type d | head -1)
+          APP=$(find ios-derived-data -name '*.app' -type d | head -1)
           echo "app=$APP" >> "$GITHUB_OUTPUT"
           echo "Built app: $APP"
 
