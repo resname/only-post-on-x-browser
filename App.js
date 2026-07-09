@@ -5,6 +5,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import WebView from 'react-native-webview';
@@ -22,15 +23,12 @@ export default function App() {
   const handleShouldStartLoadWithRequest = (request) => {
     const allowed = shouldAllowRequest(request);
 
-    // If X tries to redirect to a disallowed X page (e.g. home timeline after
-    // login), we silently send the user back to the composer.
-    if (!allowed && request.isTopFrame !== false && isXDomain(request.url)) {
-      redirectToCompose();
-      return false;
-    }
-
     if (!allowed && request.isTopFrame !== false) {
-      setBlockedUrl(request.url);
+      // Silently block disallowed X pages so the login flow is not interrupted
+      // by forced redirects back to the composer.
+      if (!isXDomain(request.url)) {
+        setBlockedUrl(request.url);
+      }
       return false;
     }
 
@@ -40,29 +38,18 @@ export default function App() {
   const handleNavigationStateChange = (navState) => {
     if (!navState.url) return;
 
-    if (!isAllowedTopLevelUrl(navState.url)) {
-      if (isXDomain(navState.url)) {
-        redirectToCompose();
-      } else {
-        // External page: try to go back, then show the blocked message.
-        if (webviewRef.current && navState.canGoBack) {
-          webviewRef.current.goBack();
-        } else {
-          setBlockedUrl(navState.url);
-        }
-      }
+    // Avoid auto-redirecting here: that causes a reload loop when X bounces
+    // between login and composer while the user is not yet authenticated.
+    if (!isAllowedTopLevelUrl(navState.url) && !isXDomain(navState.url)) {
+      setBlockedUrl(navState.url);
     }
   };
 
   const redirectToCompose = () => {
+    setBlockedUrl(null);
     webviewRef.current?.injectJavaScript(
       `window.location.replace('${COMPOSE_URL}'); true;`
     );
-  };
-
-  const dismissBlockedMessage = () => {
-    setBlockedUrl(null);
-    redirectToCompose();
   };
 
   return (
@@ -70,6 +57,9 @@ export default function App() {
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Only Post on X</Text>
+        <TouchableOpacity onPress={redirectToCompose}>
+          <Text style={styles.headerButton}>Compose</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.webviewContainer}>
         <WebView
@@ -99,9 +89,9 @@ export default function App() {
             <Text style={styles.blockedUrl} numberOfLines={1}>
               {blockedUrl}
             </Text>
-            <Text style={styles.blockedButton} onPress={dismissBlockedMessage}>
-              Back to composer
-            </Text>
+            <TouchableOpacity onPress={redirectToCompose}>
+              <Text style={styles.blockedButton}>Back to composer</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -120,10 +110,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#2f3336',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     color: '#e7e9ea',
     fontSize: 18,
+    fontWeight: '700',
+  },
+  headerButton: {
+    color: '#1d9bf0',
+    fontSize: 15,
     fontWeight: '700',
   },
   webviewContainer: {
