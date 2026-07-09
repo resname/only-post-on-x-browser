@@ -74,7 +74,7 @@ jobs:
       - name: Resolve iOS scheme name
         id: scheme
         run: |
-          SCHEME=$(find ios -maxdepth 1 -name '*.xcscheme' -not -path '*/Pods/*' | head -1 | xargs basename | sed 's/\.xcscheme$//')
+          SCHEME=$(find ios -name '*.xcscheme' -not -path '*/Pods/*' | head -1 | xargs -I {} basename {} .xcscheme)
           echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
           echo "Using scheme: $SCHEME"
 
