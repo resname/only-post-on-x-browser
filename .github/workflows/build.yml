@@ -125,6 +125,24 @@ jobs:
           cd android
           ./gradlew bundleRelease
 
+      - name: Verify release signing
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          echo "Verifying $AAB is release-signed..."
+          # Debug-signed AABs contain CERT.RSA/CERT.SF from the androiddebugkey.
+          # Release-signed AABs use the configured alias and must not use CERT.*.
+          if unzip -l "$AAB" | grep -qE 'META-INF/CERT\.(RSA|SF|DSA|EC)'; then
+            echo "::error::AAB is debug-signed (found CERT.* signature files). Play Store will reject it."
+            exit 1
+          fi
+          if ! unzip -l "$AAB" | grep -qE 'META-INF/.*\.(RSA|SF|DSA|EC)'; then
+            echo "::error::AAB has no JAR signature files."
+            exit 1
+          fi
+          # Print the certificate owner to prove it was signed by the release keystore.
+          keytool -printcert -jarfile "$AAB" | head -30
+          echo "AAB is signed in release mode."
+
       - name: Upload Android AAB
         uses: actions/upload-artifact@v4
         with:
