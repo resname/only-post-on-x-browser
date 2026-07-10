@@ -1,4 +1,4 @@
-name: Build iOS simulator and Android release APK
+name: Build iOS simulator and Android release AAB
 
 permissions:
   contents: write
@@ -74,7 +74,7 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   build-android:
-    name: Build Android release APK (version ${{ needs.check-for-changes.outputs.version }})
+    name: Build Android release AAB (version ${{ needs.check-for-changes.outputs.version }})
     needs: check-for-changes
     if: needs.check-for-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -105,16 +105,16 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android
 
-      - name: Build release APK
+      - name: Build release AAB
         run: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
 
-      - name: Upload Android APK
+      - name: Upload Android AAB
         uses: actions/upload-artifact@v4
         with:
-          name: android-release-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          name: android-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
 
   build-ios-simulator:
     name: Build iOS simulator app (version ${{ needs.check-for-changes.outputs.version }})
