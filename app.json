@@ -2,7 +2,7 @@
   "expo": {
     "name": "Only Post on X",
     "slug": "only-post-on-x",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.onlypostonx.app",
-      "buildNumber": "8"
+      "buildNumber": "9"
     },
     "android": {
       "package": "com.onlypostonx.app",
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "versionCode": 8
+      "versionCode": 9
     },
     "web": {
       "favicon": "./assets/favicon.png"
