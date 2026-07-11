@@ -1,6 +1,6 @@
 {
   "name": "only-post-on-x",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A minimal iOS/Android browser that only allows posting on X (formerly Twitter).",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
